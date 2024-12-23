@@ -9,7 +9,8 @@ export const createBucket = <IT extends { [key: string]: any }>(initial: IT, opt
     const hooks = new Map<string, Function>()
     let data = new Map<any, any>()
     let changes = new Map<string, boolean>()
-    let url = new URL(window.location.href);
+    const isWin = typeof window !== 'undefined'
+    let url = new URL(isWin ? window.location.href : "");
 
     let _option: Option = {
         store: "memory",
@@ -31,7 +32,7 @@ export const createBucket = <IT extends { [key: string]: any }>(initial: IT, opt
                 case "url":
                     if (!url.searchParams.has(key)) {
                         url.searchParams.set(key as string, value)
-                        window.history.replaceState(null, '', url.toString())
+                        isWin && window.history.replaceState(null, '', url.toString())
                     }
                     break;
             }
@@ -60,11 +61,11 @@ export const createBucket = <IT extends { [key: string]: any }>(initial: IT, opt
                         data.set(key, value)
                         break;
                     case "session":
-                        sessionStorage.setItem(key as string, value)
+                        isWin && sessionStorage.setItem(key as string, value)
                         break;
                     case "url":
                         url.searchParams.set(key as string, value);
-                        window.history.replaceState(null, '', url.toString());
+                        isWin && window.history.replaceState(null, '', url.toString());
                         break;
                 }
                 changes.set(key as string, true)
@@ -76,9 +77,9 @@ export const createBucket = <IT extends { [key: string]: any }>(initial: IT, opt
                     case "memory":
                         return data.get(key)
                     case "session":
-                        return sessionStorage.getItem(key as string) as any
+                        return isWin ? sessionStorage.getItem(key as string) as any : initial[key]
                     case "url":
-                        return url.searchParams.get(key as string) as any
+                        return isWin ? url.searchParams.get(key as string) as any : initial[key]
                 }
             },
             delete: <T extends keyof IT>(key: T) => {
@@ -87,13 +88,11 @@ export const createBucket = <IT extends { [key: string]: any }>(initial: IT, opt
                         data.delete(key)
                         break;
                     case "session":
-                        sessionStorage.removeItem(key as string)
+                        isWin && sessionStorage.removeItem(key as string)
                         break;
                     case "url":
                         url.searchParams.delete(key as string);
-                        window.history.replaceState(null, '', url.toString());
-                        console.log(url.searchParams);
-
+                        isWin && window.history.replaceState(null, '', url.toString());
                         break;
                 }
                 changes.set(key as string, true)
