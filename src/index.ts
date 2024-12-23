@@ -2,133 +2,125 @@
 import { useEffect, useId, useState } from "react"
 
 type Option = {
-    store: "memory" | "session" | "url"
+    store?: "memory" | "session" | "url"
 }
 
 export const createBucket = <IT extends { [key: string]: any }>(initial: IT, option?: Option) => {
     const hooks = new Map<string, Function>()
     let data = new Map<any, any>()
     let changes = new Map<string, boolean>()
-    const isWin = typeof window !== 'undefined'
-    let url = new URL(isWin ? window.location.href : "");
 
     let _option: Option = {
         store: "memory",
         ...option,
     }
-
-    const setIntial = () => {
-        for (let key in initial) {
-            let value = initial[key]
-            switch (_option.store) {
-                case "memory":
-                    data.set(key, value)
-                    break;
-                case "session":
-                    if (!sessionStorage.getItem(key)) {
-                        sessionStorage.setItem(key as string, value)
+    const handleStorage = (isLoaded = true) => {
+        if (typeof window !== 'undefined') {
+            let url = new URL(window.location.href)
+            if (_option.store === 'session') {
+                for (let key in initial) {
+                    let has = sessionStorage.getItem(key) !== null
+                    if (isLoaded || !has) {
+                        if (data.has(key)) {
+                            sessionStorage.setItem(key, data.get(key))
+                        } else {
+                            sessionStorage.removeItem(key)
+                        }
+                    } else if (has) {
+                        data.set(key, sessionStorage.getItem(key))
                     }
-                    break;
-                case "url":
-                    if (!url.searchParams.has(key)) {
-                        url.searchParams.set(key as string, value)
-                        isWin && window.history.replaceState(null, '', url.toString())
+                }
+            } else if (_option.store === "url") {
+                for (let key in initial) {
+                    let has = url.searchParams.has(key)
+                    if (isLoaded || !has) {
+                        if (data.has(key)) {
+                            url.searchParams.set(key, data.get(key))
+                        } else {
+                            url.searchParams.delete(key)
+                        }
+                    } else if (has) {
+                        data.set(key, url.searchParams.get(key))
                     }
-                    break;
+                }
+                window.history.replaceState(null, '', url.toString())
             }
-            changes.set(key, true)
         }
     }
 
-    setIntial()
+    for (let key in initial) {
+        let value = initial[key]
+        data.set(key, value)
+        changes.set(key, true)
+    }
+    handleStorage(false)
+
+    let dispatch = () => {
+        hooks.forEach(d => {
+            try {
+                d()
+            } catch (error) { }
+        })
+    }
 
     const useHook = () => {
         const id = useId()
-        const [, up] = useState(0)
+        const [, setUp] = useState(0)
 
         useEffect(() => {
-            hooks.set(id, () => up(Math.random()))
+            hooks.set(id, () => setUp(Math.random()))
             return () => {
                 hooks.delete(id)
             }
         }, [])
 
-        const root = {
+        return {
             set: <T extends keyof IT>(key: T, value: IT[T]) => {
                 if (!(key in initial)) throw new Error(`(${key as string}) Invalid key provided in the set function. Please verify the structure of the initial state data.`)
-                switch (_option.store) {
-                    case "memory":
-                        data.set(key, value)
-                        break;
-                    case "session":
-                        isWin && sessionStorage.setItem(key as string, value)
-                        break;
-                    case "url":
-                        url.searchParams.set(key as string, value);
-                        isWin && window.history.replaceState(null, '', url.toString());
-                        break;
-                }
+                data.set(key, value)
                 changes.set(key as string, true)
-                hooks.forEach(d => d())
-
+                dispatch()
+                handleStorage()
             },
             get: <T extends keyof IT>(key: T): IT[T] => {
-                switch (_option.store) {
-                    case "memory":
-                        return data.get(key)
-                    case "session":
-                        return isWin ? sessionStorage.getItem(key as string) as any : initial[key]
-                    case "url":
-                        return isWin ? url.searchParams.get(key as string) as any : initial[key]
-                }
+                return data.get(key)
             },
             delete: <T extends keyof IT>(key: T) => {
-                switch (_option.store) {
-                    case "memory":
-                        data.delete(key)
-                        break;
-                    case "session":
-                        isWin && sessionStorage.removeItem(key as string)
-                        break;
-                    case "url":
-                        url.searchParams.delete(key as string);
-                        isWin && window.history.replaceState(null, '', url.toString());
-                        break;
-                }
+                data.delete(key)
                 changes.set(key as string, true)
-                hooks.forEach(d => d())
+                dispatch()
+                handleStorage()
             },
             clear: () => {
                 for (let key in initial) {
-                    root.delete(key)
+                    data.delete(key)
                     changes.set(key, true)
                 }
-                hooks.forEach(d => d())
+                dispatch()
+                handleStorage()
             },
             getState: () => {
                 let d: any = {}
-                for (let key of data.keys()) {
-                    d[key] = root.get(key)
+                for (let key in initial) {
+                    d[key] = data.get(key)
                 }
                 return d as IT
             },
             setState: (state: Partial<IT>) => {
                 for (let key in state) {
                     if (!(key in initial)) throw new Error(`(${key}) Invalid key provided in the setState function. Please verify the structure of the initial state data.`)
-                    root.set(key, state[key] as any)
+                    data.set(key, state[key] as any)
                     changes.set(key, true)
                 }
-                hooks.forEach(d => d())
+                dispatch()
+                handleStorage()
             },
 
             isChange: <T extends keyof IT>(key: T) => Boolean(changes.get(key as string)),
             getChanges: () => {
                 let _changes: any = {}
                 for (let key of changes.keys()) {
-                    const is = changes.get(key as string)
-                    if (is) {
-                        _changes[key] = true
-                    }
+                    if (changes.get(key as string)) _changes[key] = true
                 }
                 return _changes as { [key in keyof IT]: boolean }
             },
@@ -138,8 +130,6 @@ export const createBucket = <IT extends { [key: string]: any }>(initial: IT, opt
                 }
             }
         }
-
-        return root
     }
 
     return useHook
