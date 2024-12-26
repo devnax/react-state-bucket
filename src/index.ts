@@ -1,44 +1,44 @@
 "use client"
-import { useEffect, useId, useState } from "react"
+import { useEffect, useId, useMemo, useState } from "react"
 
-type Option = {
-    store?: "memory" | "session" | "url"
+export type BucketOptions = {
+    store?: "memory" | "session" | "local" | "url"
 }
 
-export const createBucket = <IT extends { [key: string]: any }>(initial: IT, option?: Option) => {
+export const createBucket = <IT extends { [key: string]: any }>(initial: IT, option?: BucketOptions) => {
     const hooks = new Map<string, Function>()
     let data = new Map<any, any>()
     let changes = new Map<string, boolean>()
 
-    let _option: Option = {
+    let _option: BucketOptions = {
         store: "memory",
         ...option,
     }
+
+    for (let key in initial) {
+        let value = initial[key]
+        data.set(key, value)
+        changes.set(key, true)
+    }
+
     const handleStorage = (isLoaded = true) => {
         if (typeof window !== 'undefined') {
             let url = new URL(window.location.href)
-            if (_option.store === 'session') {
+            if (_option.store === 'session' || _option.store === 'local') {
+                let storage = _option.store === "session" ? sessionStorage : localStorage
                 for (let key in initial) {
-                    let has = sessionStorage.getItem(key) !== null
+                    let has = storage.getItem(key) !== null
                     if (isLoaded || !has) {
-                        if (data.has(key)) {
-                            sessionStorage.setItem(key, data.get(key))
-                        } else {
-                            sessionStorage.removeItem(key)
-                        }
+                        data.has(key) ? storage.setItem(key, data.get(key)) : storage.removeItem(key)
                     } else if (has) {
-                        data.set(key, sessionStorage.getItem(key))
+                        data.set(key, storage.getItem(key))
                     }
                 }
             } else if (_option.store === "url") {
                 for (let key in initial) {
                     let has = url.searchParams.has(key)
                     if (isLoaded || !has) {
-                        if (data.has(key)) {
-                            url.searchParams.set(key, data.get(key))
-                        } else {
-                            url.searchParams.delete(key)
-                        }
+                        data.has(key) ? url.searchParams.set(key, data.get(key)) : url.searchParams.delete(key)
                     } else if (has) {
                         data.set(key, url.searchParams.get(key))
                     }
@@ -48,24 +48,60 @@ export const createBucket = <IT extends { [key: string]: any }>(initial: IT, opt
         }
     }
 
-    for (let key in initial) {
-        let value = initial[key]
-        data.set(key, value)
-        changes.set(key, true)
-    }
     handleStorage(false)
 
     let dispatch = () => {
         hooks.forEach(d => {
-            try {
-                d()
-            } catch (error) { }
+            try { d() } catch (error) { }
         })
+        handleStorage()
     }
+
+    const set = <T extends keyof IT>(key: T, value: IT[T]) => {
+        if (!(key in initial)) throw new Error(`(${key as string}) Invalid key provided in the set function. Please verify the structure of the initial state data.`)
+        data.set(key, value)
+        changes.set(key as string, true)
+        dispatch()
+    }
+
+    const get = <T extends keyof IT>(key: T): IT[T] => data.get(key)
+    const _delete = <T extends keyof IT>(key: T) => {
+        data.delete(key)
+        changes.set(key as string, true)
+        dispatch()
+    }
+
+    const clear = () => {
+        for (let key in initial) {
+            data.delete(key)
+            changes.set(key, true)
+        }
+        dispatch()
+    }
+
+    const getState = () => {
+        let d: any = {}
+        for (let key in initial) {
+            d[key] = data.get(key)
+        }
+        return d as IT
+    }
+
+    const setState = (state: Partial<IT>) => {
+        for (let key in state) {
+            if (!(key in initial)) throw new Error(`(${key}) Invalid key provided in the setState function. Please verify the structure of the initial state data.`)
+            data.set(key, state[key] as any)
+            changes.set(key, true)
+        }
+        dispatch()
+    }
+    const isChange = <T extends keyof IT>(key: T) => changes.get(key as string)
+    const getChanges = () => changes.keys().filter((key) => changes.get(key as string))
+    const clearChanges = () => changes.keys().forEach(key => changes.set(key, false))
 
     const useHook = () => {
         const id = useId()
-        const [, setUp] = useState(0)
+        const [d, setUp] = useState(0)
 
         useEffect(() => {
             hooks.set(id, () => setUp(Math.random()))
@@ -74,63 +110,30 @@ export const createBucket = <IT extends { [key: string]: any }>(initial: IT, opt
             }
         }, [])
 
-        return {
-            set: <T extends keyof IT>(key: T, value: IT[T]) => {
-                if (!(key in initial)) throw new Error(`(${key as string}) Invalid key provided in the set function. Please verify the structure of the initial state data.`)
-                data.set(key, value)
-                changes.set(key as string, true)
-                dispatch()
-                handleStorage()
-            },
-            get: <T extends keyof IT>(key: T): IT[T] => {
-                return data.get(key)
-            },
-            delete: <T extends keyof IT>(key: T) => {
-                data.delete(key)
-                changes.set(key as string, true)
-                dispatch()
-                handleStorage()
-            },
-            clear: () => {
-                for (let key in initial) {
-                    data.delete(key)
-                    changes.set(key, true)
-                }
-                dispatch()
-                handleStorage()
-            },
-            getState: () => {
-                let d: any = {}
-                for (let key in initial) {
-                    d[key] = data.get(key)
-                }
-                return d as IT
-            },
-            setState: (state: Partial<IT>) => {
-                for (let key in state) {
-                    if (!(key in initial)) throw new Error(`(${key}) Invalid key provided in the setState function. Please verify the structure of the initial state data.`)
-                    data.set(key, state[key] as any)
-                    changes.set(key, true)
-                }
-                dispatch()
-                handleStorage()
-            },
+        const state = useMemo(() => getState(), [d])
 
-            isChange: <T extends keyof IT>(key: T) => Boolean(changes.get(key as string)),
-            getChanges: () => {
-                let _changes: any = {}
-                for (let key of changes.keys()) {
-                    if (changes.get(key as string)) _changes[key] = true
-                }
-                return _changes as { [key in keyof IT]: boolean }
-            },
-            clearChanges: () => {
-                for (let key of changes.keys()) {
-                    changes.set(key, false)
-                }
-            }
+        return {
+            set,
+            get,
+            delete: _delete,
+            clear,
+            getState: () => state,
+            setState,
+            isChange,
+            getChanges,
+            clearChanges,
         }
     }
+
+    useHook.set = set
+    useHook.get = get
+    useHook.delete = _delete
+    useHook.clear = clear
+    useHook.getState = getState
+    useHook.setState = setState
+    useHook.isChange = isChange
+    useHook.getChanges = getChanges
+    useHook.clearChanges = clearChanges
 
     return useHook
 }
