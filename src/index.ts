@@ -96,8 +96,8 @@ export const createBucket = <IT extends { [key: string]: any }>(initial: IT, opt
         dispatch()
     }
     const isChange = <T extends keyof IT>(key: T) => changes.get(key as string)
-    const getChanges = () => changes.keys().filter((key) => changes.get(key as string))
-    const clearChanges = () => changes.keys().forEach(key => changes.set(key, false))
+    const getChanges = () => Array.from(changes.keys()).filter((key: string) => changes.get(key as string))
+    const clearChanges = () => Array.from(changes.keys()).forEach((key: string) => changes.set(key, false))
 
     const useHook = () => {
         const id = useId()

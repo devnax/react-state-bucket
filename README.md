@@ -1,181 +1,237 @@
-# React State Bucket
+<p align="center">
+  <a href="https://mui.com/core/" rel="noopener" target="_blank"><img width="120" src="https://api.mypiebd.com/uploads/2024/11/26/images/5c31a5fc731a89c82fd0e846dd69a99378243.png" alt="Material UI logo"></a>
+</p>
 
-`react-state-bucket` is a lightweight state management library for React. It allows developers to create global states that can be accessed and modified from any component. The state can be stored in memory, session storage, or the URL query parameters, providing flexibility for different use cases.
+<h1 align="center">React State Bucket</h1>
 
-## Features
 
-- Lightweight and easy-to-use global state management.
-- Supports three storage options: memory, session storage, and URL.
-- Fully TypeScript-supported API.
-- React hook-based implementation for seamless integration.
-- Ideal for both small and large-scale React applications.
+`react-state-bucket` is a lightweight and powerful package designed to manage states globally in React applications. It provides CRUD operations for your state data with ease, enabling developers to handle complex state management scenarios without the need for heavy libraries.
+
+This package supports multiple storage options, including:
+
+- Memory (default)
+- Session Storage
+- Local Storage
+- URL Query Parameters
 
 ## Installation
-
-Install the package via npm or yarn:
 
 ```bash
 npm install react-state-bucket
 ```
 
-or
+## Features
 
-```bash
-yarn add react-state-bucket
-```
+- **Global State Management**: Easily manage state across your entire React application.
+- **CRUD Operations**: Create, Read, Update, and Delete state values effortlessly.
+- **Multiple Storage Options**: Choose where to store your data ("memory", "session", "local", or "url").
+- **Reactivity**: Automatically update components when the state changes.
+- **Custom Hooks**: Seamlessly integrate with React’s functional components.
 
 ## Usage
 
-### Importing the Package
+### Basic Example
 
-The package is designed for use with React's client-side components. Start by importing the required functionality:
-
-```javascript
+```jsx
 "use client";
-import { createBucket } from "react-state-bucket";
-```
 
-### Creating a State
-
-Use the `createBucket` function to define a global state. Provide an initial state object and optionally specify the storage type (`"memory"`, `"session"`, or `"url"`).
-
-```javascript
-const useGlobalState = createBucket({
-  count: 0,
-  name: "React",
-}, {
-  store: "memory", // Optional: Defaults to "memory"
-});
-```
-
-### Using the State in Components
-
-Components can access and manipulate the state by calling the `useGlobalState` hook.
-
-#### Example:
-
-```javascript
 import React from "react";
+import createBucket from "react-state-bucket";
 
-function Counter() {
-  const state = useGlobalState();
-
-  return (
-    <div>
-      <h1>Count: {state.get("count")}</h1>
-      <button onClick={() => state.set("count", state.get("count") + 1)}>
-        Increment
-      </button>
-      <button onClick={() => state.delete("count")}>Reset</button>
-    </div>
-  );
-}
+// Create a bucket with initial state
+const useGlobalState = createBucket({ count: 0, user: "Guest" });
 
 function App() {
-  return (
-    <div>
-      <Counter />
-    </div>
-  );
+    const globalState = useGlobalState();
+
+    return (
+        <div>
+            <h1>Global State Management</h1>
+            <p>Count: {globalState.get("count")}</p>
+            <button onClick={() => globalState.set("count", globalState.get("count") + 1)}>Increment</button>
+            <button onClick={() => globalState.delete("count")}>Reset Count</button>
+            <pre>{JSON.stringify(globalState.getState(), null, 2)}</pre>
+        </div>
+    );
 }
 
 export default App;
 ```
 
-### State API
+### Using Multiple Buckets
 
-When you call the hook returned by `createBucket`, you gain access to a set of utility methods:
+```jsx
+const useUserBucket = createBucket({ name: "", age: 0 });
+const useSettingsBucket = createBucket({ theme: "light", notifications: true });
 
-| Method            | Description                                                |
-| ----------------- | ---------------------------------------------------------- |
-| `set(key, value)` | Sets the value of a specific key in the state.             |
-| `get(key)`        | Gets the value of a specific key from the state.           |
-| `delete(key)`     | Deletes a specific key from the state.                     |
-| `clear()`         | Clears all keys from the state.                            |
-| `getState()`      | Retrieves the entire state object.                         |
-| `setState(state)` | Updates the state with a partial object.                   |
-| `isChange(key)`   | Checks if a specific key has changed since the last clear. |
-| `getChanges()`    | Retrieves an object representing all changed keys.         |
-| `clearChanges()`  | Clears the record of changes.                              |
+function Profile() {
+    const userBucket = useUserBucket();
+    const settingsBucket = useSettingsBucket();
 
-### Storage Options
-
-The `createBucket` function supports three storage types:
-
-1. **Memory (default):** Stores the state in memory for the duration of the session.
-2. **Session:** Persists the state in `sessionStorage` across page reloads.
-3. **URL:** Stores the state in the URL's query parameters, enabling sharable states.
-
-#### Example with URL Storage:
-
-```javascript
-const useURLState = createBucket({
-  theme: "light",
-}, {
-  store: "url",
-});
-
-function ThemeSwitcher() {
-  const state = useURLState();
-
-  return (
-    <button onClick={() => state.set("theme", state.get("theme") === "light" ? "dark" : "light")}>
-      Toggle Theme (Current: {state.get("theme")})
-    </button>
-  );
+    return (
+        <div>
+            <h1>User Profile</h1>
+            <button onClick={() => userBucket.set("name", "John Doe")}>Set Name</button>
+            <button onClick={() => settingsBucket.set("theme", "dark")}>Change Theme</button>
+            <pre>User State: {JSON.stringify(userBucket.getState(), null, 2)}</pre>
+            <p>Current Theme: {settingsBucket.get("theme")}</p>
+        </div>
+    );
 }
 ```
 
-## Real-World Example
+### Storage Options Example
 
-### Managing a Multi-Step Form
+```jsx
+const usePersistentBucket = createBucket(
+    { token: "", language: "en" },
+    { store: "local" }
+);
 
-```javascript
-const useFormState = createBucket({
-  step: 1,
-  formData: {},
-});
+function PersistentExample() {
+    const persistentBucket = usePersistentBucket();
 
-function MultiStepForm() {
-  const state = useFormState();
-
-  const nextStep = () => state.set("step", state.get("step") + 1);
-  const prevStep = () => state.set("step", state.get("step") - 1);
-
-  return (
-    <div>
-      <h2>Step {state.get("step")}</h2>
-      <button onClick={prevStep} disabled={state.get("step") === 1}>Back</button>
-      <button onClick={nextStep}>Next</button>
-    </div>
-  );
+    return (
+        <div>
+            <h1>Persistent Bucket</h1>
+            <button onClick={() => persistentBucket.set("token", "abc123")}>Set Token</button>
+            <p>Token: {persistentBucket.get("token")}</p>
+        </div>
+    );
 }
 ```
 
-## Best Practices
+### Reusing State Across Components
 
-- Use `memory` storage for temporary UI states that don't need persistence.
-- Use `session` storage for states that should persist across page reloads but not sessions.
-- Use `url` storage for sharable states, like filters or query parameters.
+```jsx
+"use client";
 
-## FAQs
+import React from "react";
+import createBucket from "react-state-bucket";
 
-### 1. Can I use `react-state-bucket` in a server-side rendered (SSR) application?
-Currently, `react-state-bucket` is designed for client-side use only.
+// Create a global bucket
+const useGlobalState = createBucket({ count: 0, user: "Guest" });
 
-### 2. What happens if I try to set an undefined key?
-An error will be thrown, ensuring state integrity.
+function Counter() {
+    const globalState = useGlobalState(); // Access bucket functions and trigger re-render on state updates
 
-### 3. Can I use this package with TypeScript?
-Yes, `react-state-bucket` fully supports TypeScript with type-safe APIs.
+    return (
+        <div>
+            <h2>Counter Component</h2>
+            <p>Count: {globalState.get("count")}</p>
+            <button onClick={() => globalState.set("count", globalState.get("count") + 1)}>
+                Increment Count
+            </button>
+        </div>
+    );
+}
 
-## GitHub Repository
+function UserDisplay() {
+    const globalState = useGlobalState(); // Reuse the same global bucket for reactivity
 
-Find the source code and contribute to the project on GitHub:
-[https://github.com/devnax/react-state-bucket.git](https://github.com/devnax/react-state-bucket.git)
+    return (
+        <div>
+            <h2>User Component</h2>
+            <p>Current User: {globalState.get("user")}</p>
+            <button onClick={() => globalState.set("user", "John Doe")}>
+                Set User to John Doe
+            </button>
+        </div>
+    );
+}
 
-[![npm version](https://img.shields.io/npm/v/react-state-bucket.svg)](https://www.npmjs.com/package/react-state-bucket)
+function App() {
+
+    return (
+        <div>
+            <h1>Global State Example</h1>
+            <Counter />
+            <UserDisplay />
+            <pre>Global State: {JSON.stringify(useGlobalState().getState(), null, 2)}</pre>
+        </div>
+    );
+}
+
+export default App;
+```
+
+## Direct Usage of Functions
+
+The `createBucket` function provides direct access to the state management methods like `get`, `set`, `delete`, and others. For components that require re-rendering when the state changes, call the custom hook returned by `createBucket` within the component.
+
+### Example
+
+```jsx
+const useGlobalState = createBucket({ count: 0, user: "Guest" });
+
+function Counter() {
+
+    return (
+        <div>
+            <p>Count: {useGlobalState.get("count")}</p>
+            <button onClick={() => useGlobalState.set("count", useGlobalState.get("count") + 1)}>Increment</button>
+        </div>
+    );
+}
+
+function App() {
+    useGlobalState(); // Will automatically re-render when state updates
+
+    return (
+        <div>
+            <Counter />
+        </div>
+    );
+}
+
+export default App;
+```
+
+
+
+## API Reference
+
+### `createBucket(initial: object, option?: BucketOptions)`
+
+Creates a new bucket for managing the global state.
+
+#### Parameters
+
+| Name      | Type      | Description                               |
+| --------- | --------- | ----------------------------------------- |
+| `initial` | `object`  | Initial state values.                     |
+| `option`  | `object?` | Optional configuration (default: memory). |
+
+#### `BucketOptions`
+
+`BucketOptions` allows you to configure how and where the state is stored. It includes:
+
+| Property | Type                                  | Description                                    |
+| -------- | ------------------------------------- | ---------------------------------------------- |
+| `store`  | `'memory', 'session', 'local', 'url'` | Specifies the storage mechanism for the state. |
+
+### Returned Functions
+
+#### State Management
+
+| Function          | Description                                           |
+| ----------------- | ----------------------------------------------------- |
+| `set(key, value)` | Sets the value of a specific key in the state.        |
+| `get(key)`        | Retrieves the value of a specific key from the state. |
+| `delete(key)`     | Removes a key-value pair from the state.              |
+| `clear()`         | Clears all state values.                              |
+| `getState()`      | Returns the entire state as an object.                |
+| `setState(state)` | Updates the state with a partial object.              |
+
+#### Change Detection
+
+| Function         | Description                                 |
+| ---------------- | ------------------------------------------- |
+| `isChange(key)`  | Checks if a specific key has been modified. |
+| `getChanges()`   | Returns an array of keys that have changed. |
+| `clearChanges()` | Resets the change detection for all keys.   |
 
 ## License
 
-MIT
+This project is licensed under the [MIT License](https://opensource.org/licenses/MIT).
+

@@ -30,6 +30,7 @@ const Delete = () => {
 const App = () => {
   const form = useForm()
   const name = form.get("name")
+  console.log(form.getChanges());
 
   return (
     <div>
