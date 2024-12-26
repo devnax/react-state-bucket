@@ -36,7 +36,7 @@ npm install react-state-bucket
 "use client";
 
 import React from "react";
-import createBucket from "react-state-bucket";
+import {createBucket} from "react-state-bucket";
 
 // Create a bucket with initial state
 const useGlobalState = createBucket({ count: 0, user: "Guest" });
@@ -107,7 +107,7 @@ function PersistentExample() {
 "use client";
 
 import React from "react";
-import createBucket from "react-state-bucket";
+import {createBucket} from "react-state-bucket";
 
 // Create a global bucket
 const useGlobalState = createBucket({ count: 0, user: "Guest" });
