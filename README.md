@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://mui.com/core/" rel="noopener" target="_blank"><img width="120" src="https://api.mypiebd.com/uploads/2024/11/26/images/5c31a5fc731a89c82fd0e846dd69a99378243.png" alt="Material UI logo"></a>
+  <img width="120" src="https://api.mypiebd.com/uploads/2024/11/26/images/5c31a5fc731a89c82fd0e846dd69a99378243.png" alt="React State Bucket logo">
 </p>
 
 <h1 align="center">React State Bucket</h1>
