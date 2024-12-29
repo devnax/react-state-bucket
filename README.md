@@ -4,192 +4,174 @@
 
 <h1 align="center">React State Bucket</h1>
 
+Effortlessly manage React application states with **react-state-bucket**, a lightweight yet powerful state management library.
 
-`react-state-bucket` is a lightweight and powerful package designed to manage states globally in React applications. It provides CRUD operations for your state data with ease, enabling developers to handle complex state management scenarios without the need for heavy libraries.
+---
 
-This package supports multiple storage options, including:
+## 🚀 Features
 
-- Memory (default)
-- Session Storage
-- Local Storage
-- URL Query Parameters
-
-## Installation
-
-```bash
-npm install react-state-bucket
-```
-
-## Features
-
-- **Global State Management**: Easily manage state across your entire React application.
+- **Global State Management**: Manage state across your entire React application with ease.
 - **CRUD Operations**: Create, Read, Update, and Delete state values effortlessly.
-- **Multiple Storage Options**: Choose where to store your data ("memory", "session", "local", or "url").
+- **Multiple Storage Options**: Store state in "memory," "session storage," "local storage," or "URL parameters."
 - **Reactivity**: Automatically update components when the state changes.
 - **Custom Hooks**: Seamlessly integrate with React’s functional components.
+- **TypeScript Support**: Fully typed for a better development experience.
+- **Lightweight**: Small bundle size with no unnecessary dependencies.
 
-## Usage
+---
 
-### Basic Example
+## 📦 Installation
 
-```jsx
-"use client";
+Install the package via npm or yarn:
 
-import React from "react";
-import {createBucket} from "react-state-bucket";
+```bash
+# Using npm
+npm install react-state-bucket
 
-// Create a bucket with initial state
-const useGlobalState = createBucket({ count: 0, user: "Guest" });
+# Using yarn
+yarn add react-state-bucket
+```
 
-function App() {
-    const globalState = useGlobalState();
+---
 
-    return (
-        <div>
-            <h1>Global State Management</h1>
-            <p>Count: {globalState.get("count")}</p>
-            <button onClick={() => globalState.set("count", globalState.get("count") + 1)}>Increment</button>
-            <button onClick={() => globalState.delete("count")}>Reset Count</button>
-            <pre>{JSON.stringify(globalState.getState(), null, 2)}</pre>
-        </div>
-    );
-}
+## 🔧 Setup and Usage
+
+### Step 1: Create a State Bucket
+
+Define your initial state and actions:
+
+```javascript
+import { createBucket } from 'react-state-bucket';
+
+const initialState = {
+  count: 0,
+  user: 'Guest',
+};
+
+export const useGlobalState = createBucket(initialState);
+```
+
+### Step 2: Use the State Bucket in a Component
+
+Access state and actions in your React components:
+
+```javascript
+import React from 'react';
+import { useGlobalState } from './state';
+
+const App = () => {
+  const globalState = useGlobalState();
+
+  return (
+    <div>
+      <h1>Global State Management</h1>
+      <p>Count: {globalState.get('count')}</p>
+      <button onClick={() => globalState.set('count', globalState.get('count') + 1)}>Increment</button>
+      <button onClick={() => globalState.delete('count')}>Reset Count</button>
+      <pre>{JSON.stringify(globalState.getState(), null, 2)}</pre>
+    </div>
+  );
+};
 
 export default App;
 ```
 
+---
+
+## 🌟 Advanced Features
+
 ### Using Multiple Buckets
 
-```jsx
-const useUserBucket = createBucket({ name: "", age: 0 });
-const useSettingsBucket = createBucket({ theme: "light", notifications: true });
+```javascript
+const useUserBucket = createBucket({ name: '', age: 0 });
+const useSettingsBucket = createBucket({ theme: 'light', notifications: true });
 
 function Profile() {
-    const userBucket = useUserBucket();
-    const settingsBucket = useSettingsBucket();
+  const userBucket = useUserBucket();
+  const settingsBucket = useSettingsBucket();
 
-    return (
-        <div>
-            <h1>User Profile</h1>
-            <button onClick={() => userBucket.set("name", "John Doe")}>Set Name</button>
-            <button onClick={() => settingsBucket.set("theme", "dark")}>Change Theme</button>
-            <pre>User State: {JSON.stringify(userBucket.getState(), null, 2)}</pre>
-            <p>Current Theme: {settingsBucket.get("theme")}</p>
-        </div>
-    );
+  return (
+    <div>
+      <h1>User Profile</h1>
+      <button onClick={() => userBucket.set('name', 'John Doe')}>Set Name</button>
+      <button onClick={() => settingsBucket.set('theme', 'dark')}>Change Theme</button>
+      <pre>User State: {JSON.stringify(userBucket.getState(), null, 2)}</pre>
+      <p>Current Theme: {settingsBucket.get('theme')}</p>
+    </div>
+  );
 }
 ```
 
-### Storage Options Example
+### Persistent Storage Options
 
-```jsx
+```javascript
 const usePersistentBucket = createBucket(
-    { token: "", language: "en" },
-    { store: "local" }
+  { token: '', language: 'en' },
+  { store: 'local' }
 );
 
 function PersistentExample() {
-    const persistentBucket = usePersistentBucket();
+  const persistentBucket = usePersistentBucket();
 
-    return (
-        <div>
-            <h1>Persistent Bucket</h1>
-            <button onClick={() => persistentBucket.set("token", "abc123")}>Set Token</button>
-            <p>Token: {persistentBucket.get("token")}</p>
-        </div>
-    );
+  return (
+    <div>
+      <h1>Persistent Bucket</h1>
+      <button onClick={() => persistentBucket.set('token', 'abc123')}>Set Token</button>
+      <p>Token: {persistentBucket.get('token')}</p>
+    </div>
+  );
 }
 ```
 
 ### Reusing State Across Components
 
-```jsx
-"use client";
+```javascript
+import React from 'react';
+import { createBucket } from 'react-state-bucket';
 
-import React from "react";
-import {createBucket} from "react-state-bucket";
-
-// Create a global bucket
-const useGlobalState = createBucket({ count: 0, user: "Guest" });
+const useGlobalState = createBucket({ count: 0, user: 'Guest' });
 
 function Counter() {
-    const globalState = useGlobalState(); // Access bucket functions and trigger re-render on state updates
+  const globalState = useGlobalState();
 
-    return (
-        <div>
-            <h2>Counter Component</h2>
-            <p>Count: {globalState.get("count")}</p>
-            <button onClick={() => globalState.set("count", globalState.get("count") + 1)}>
-                Increment Count
-            </button>
-        </div>
-    );
+  return (
+    <div>
+      <h2>Counter Component</h2>
+      <p>Count: {globalState.get('count')}</p>
+      <button onClick={() => globalState.set('count', globalState.get('count') + 1)}>Increment Count</button>
+    </div>
+  );
 }
 
 function UserDisplay() {
-    const globalState = useGlobalState(); // Reuse the same global bucket for reactivity
+  const globalState = useGlobalState();
 
-    return (
-        <div>
-            <h2>User Component</h2>
-            <p>Current User: {globalState.get("user")}</p>
-            <button onClick={() => globalState.set("user", "John Doe")}>
-                Set User to John Doe
-            </button>
-        </div>
-    );
+  return (
+    <div>
+      <h2>User Component</h2>
+      <p>Current User: {globalState.get('user')}</p>
+      <button onClick={() => globalState.set('user', 'John Doe')}>Set User to John Doe</button>
+    </div>
+  );
 }
 
 function App() {
-
-    return (
-        <div>
-            <h1>Global State Example</h1>
-            <Counter />
-            <UserDisplay />
-            <pre>Global State: {JSON.stringify(useGlobalState().getState(), null, 2)}</pre>
-        </div>
-    );
+  return (
+    <div>
+      <h1>Global State Example</h1>
+      <Counter />
+      <UserDisplay />
+      <pre>Global State: {JSON.stringify(useGlobalState().getState(), null, 2)}</pre>
+    </div>
+  );
 }
 
 export default App;
 ```
 
-## Direct Usage of Functions
+---
 
-The `createBucket` function provides direct access to the state management methods like `get`, `set`, `delete`, and others. For components that require re-rendering when the state changes, call the custom hook returned by `createBucket` within the component.
-
-### Example
-
-```jsx
-const useGlobalState = createBucket({ count: 0, user: "Guest" });
-
-function Counter() {
-
-    return (
-        <div>
-            <p>Count: {useGlobalState.get("count")}</p>
-            <button onClick={() => useGlobalState.set("count", useGlobalState.get("count") + 1)}>Increment</button>
-        </div>
-    );
-}
-
-function App() {
-    useGlobalState(); // Will automatically re-render when state updates
-
-    return (
-        <div>
-            <Counter />
-        </div>
-    );
-}
-
-export default App;
-```
-
-
-
-## API Reference
+## 📘 API Reference
 
 ### `createBucket(initial: object, option?: BucketOptions)`
 
@@ -231,7 +213,21 @@ Creates a new bucket for managing the global state.
 | `getChanges()`   | Returns an array of keys that have changed. |
 | `clearChanges()` | Resets the change detection for all keys.   |
 
-## License
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please check out the [contribution guidelines](https://github.com/devnax/react-state-bucket).
+
+---
+
+## 📄 License
 
 This project is licensed under the [MIT License](https://opensource.org/licenses/MIT).
+
+---
+
+## 📞 Support
+
+For help or suggestions, feel free to open an issue on [GitHub](https://github.com/devnax/react-state-bucket/issues) or contact us via [devnaxrul@gmail.com](mailto:devnaxrul@gmail.com).
 
