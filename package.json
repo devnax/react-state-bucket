@@ -1,5 +1,5 @@
 {
-  "version": "1.0.9",
+  "version": "1.1.0",
   "name": "react-state-bucket",
   "author": "Naxrul Ahmed",
   "license": "MIT",
@@ -9,6 +9,10 @@
   },
   "main": "./index.js",
   "description": "A lightweight and powerful package designed to manage states globally in React applications. It provides CRUD operations for your state data with ease, enabling developers to handle complex state management scenarios without the need for heavy libraries.",
+  "bugs": {
+    "url": "https://github.com/devnax/react-state-bucket/issues"
+  },
+  "homepage": "https://github.com/devnax/react-state-bucket#readme",
   "scripts": {
     "start": "makepack serve",
     "pack": "makepack pack",
@@ -22,9 +26,15 @@
     "react-dom": "^19.0.0",
     "typescript": "^4.4.2"
   },
+  "peerDependencies": {
+    "react": ">=17.0.0",
+    "react-dom": ">=17.0.0"
+  },
   "keywords": [
     "react",
     "state management",
+    "state management for React",
+    "React state library",
     "global state",
     "CRUD operations",
     "lightweight",
