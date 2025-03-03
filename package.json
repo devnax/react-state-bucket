@@ -1,5 +1,5 @@
 {
-  "version": "1.1.5",
+  "version": "1.1.6",
   "name": "react-state-bucket",
   "author": "Naxrul Ahmed",
   "license": "MIT",
@@ -7,21 +7,33 @@
     "type": "github",
     "url": "https://github.com/devnax/react-state-bucket.git"
   },
-  "main": "./index.js",
   "description": "A lightweight and powerful package designed to manage states globally in React applications. It provides CRUD operations for your state data with ease, enabling developers to handle complex state management scenarios without the need for heavy libraries.",
-  "bugs": {
-    "url": "https://github.com/devnax/react-state-bucket/issues"
-  },
   "homepage": "https://github.com/devnax/react-state-bucket#readme",
+  "main": "./index.js",
+  "module": "./esm/index.js",
+  "types": "./types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "import": "./index.js",
+      "require": "./cjs/index.js"
+    },
+    "./types/*": "./types/*.d.ts",
+    "./cjs/*": "./cjs/*.js",
+    "./*": {
+      "import": "./*.js",
+      "require": "./cjs/*.js"
+    }
+  },
   "scripts": {
-    "start": "makepack serve",
-    "pack": "makepack pack",
-    "publish:pack": "makepack pack -p"
+    "start": "makepack start",
+    "build": "makepack build",
+    "build:publish": "makepack publish"
   },
   "devDependencies": {
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
-    "makepack": "^1.4.0",
+    "makepack": "^1.5.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "typescript": "^4.4.2"
