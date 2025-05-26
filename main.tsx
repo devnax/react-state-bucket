@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { createBucket } from './pack';
+import { createBucket } from './src';
 
 const useForm = createBucket({
   name: ""
