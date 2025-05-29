@@ -1,5 +1,5 @@
 {
-  "version": "1.1.8",
+  "version": "1.1.9",
   "name": "react-state-bucket",
   "author": "Naxrul Ahmed",
   "license": "MIT",
@@ -9,8 +9,8 @@
   },
   "description": "A lightweight and powerful package designed to manage states globally in React applications. It provides CRUD operations for your state data with ease, enabling developers to handle complex state management scenarios without the need for heavy libraries.",
   "homepage": "https://github.com/devnax/react-state-bucket#readme",
-  "main": "./index.cjs",
-  "module": "./index.mjs",
+  "main": "./cjs/index.js",
+  "module": "./index.js",
   "types": "./index.d.ts",
   "type": "module",
   "scripts": {
@@ -21,7 +21,7 @@
   "devDependencies": {
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
-    "makepack": "^1.6.4",
+    "makepack": "^1.6.8",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "typescript": "^4.4.2"
@@ -39,5 +39,29 @@
     "CRUD operations",
     "lightweight",
     "typescript"
-  ]
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./index.d.ts",
+        "default": "./cjs/index.js"
+      },
+      "import": {
+        "types": "./index.d.ts",
+        "default": "./index.js"
+      }
+    },
+    "./*": {
+      "require": {
+        "types": "./*.d.ts",
+        "default": "./cjs/*.js"
+      },
+      "import": {
+        "types": "./*.d.ts",
+        "default": "./*.js"
+      }
+    },
+    "./cjs": null
+  }
 }
