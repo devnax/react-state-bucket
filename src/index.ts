@@ -1,4 +1,3 @@
-"use client"
 import { useEffect, useId, useMemo, useState } from "react"
 
 export type BucketOptions = {
