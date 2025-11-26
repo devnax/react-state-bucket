@@ -17,6 +17,7 @@ Effortlessly manage React application states with **react-state-bucket**, a ligh
 - **Custom Hooks**: Seamlessly integrate with React’s functional components.
 - **TypeScript Support**: Fully typed for a better development experience.
 - **Lightweight**: Small bundle size with no unnecessary dependencies.
+- **Change Callbacks**: React to every `set` or `delete` via the optional `onChange` hook.
 
 ---
 
@@ -188,9 +189,27 @@ Creates a new bucket for managing the global state.
 
 `BucketOptions` allows you to configure how and where the state is stored. It includes:
 
-| Property | Type                                  | Description                                    |
-| -------- | ------------------------------------- | ---------------------------------------------- |
-| `store`  | `'memory', 'session', 'local', 'url'` | Specifies the storage mechanism for the state. |
+| Property   | Type                                  | Description                                                                  |
+| ---------- | ------------------------------------- | ---------------------------------------------------------------------------- |
+| `store`    | `'memory', 'session', 'local', 'url'` | Specifies the storage mechanism for the state.                               |
+| `onChange` | `(key, value, type) => void`          | Callback invoked after each `set`/`delete`. `type` is `'set'` or `'delete'`. |
+
+#### `onChange` Callback
+
+Use `onChange` to observe bucket mutations—for example, to sync analytics or trigger side effects.
+
+```javascript
+const useBucketWithLogger = createBucket(
+  { count: 0 },
+  {
+    onChange: (key, value, type) => {
+      console.log(`[bucket] ${type} -> ${key}`, value);
+    },
+  }
+);
+```
+
+When `set('count', 1)` runs, the callback fires with `(key='count', value=1, type='set')`. Deletions invoke the same hook with `type='delete'` and `value` as `undefined`.
 
 ### Returned Functions
 
