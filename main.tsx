@@ -4,7 +4,7 @@ import { createBucket } from './src';
 
 const useForm = createBucket({
   name: ""
-}, { store: "url" })
+}, { store: "local" })
 
 const Change = () => {
 

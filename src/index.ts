@@ -30,7 +30,7 @@ export const createBucket = <IT extends { [key: string]: any }>(initial: IT, opt
       storage.setItem(key as string, JSON.stringify(value))
     } else if (typeof window !== 'undefined' && _option.store === 'url') {
       let url = new URL(window.location.href)
-      url.searchParams.set(key as string, JSON.stringify(value))
+      url.searchParams.set(key as string, encodeURIComponent(JSON.stringify(value)))
       window.history.replaceState({}, '', url.toString())
     } else {
       data.set(key, value)
@@ -56,7 +56,7 @@ export const createBucket = <IT extends { [key: string]: any }>(initial: IT, opt
       let url = new URL(window.location.href)
       let storedValue = url.searchParams.get(key as string)!
       try {
-        return JSON.parse(storedValue)
+        return JSON.parse(decodeURIComponent(storedValue))
       } catch {
         return storedValue as any
       }
@@ -64,20 +64,9 @@ export const createBucket = <IT extends { [key: string]: any }>(initial: IT, opt
     return data.get(key)
   }
 
-
-  const _delete = <T extends keyof IT>(key: T) => {
+  const del = <T extends keyof IT>(key: T) => {
     if (!(key in initial)) throw new Error(`(${key as string}) Invalid key provided in the delete function. Please verify the structure of the initial state data.`)
-
-    if (typeof window !== 'undefined' && (_option.store === 'session' || _option.store === 'local')) {
-      let storage = _option.store === "session" ? sessionStorage : localStorage
-      storage.removeItem(key as string)
-    } else if (typeof window !== 'undefined' && _option.store === 'url') {
-      let url = new URL(window.location.href)
-      url.searchParams.delete(key as string)
-      window.history.replaceState({}, '', url.toString())
-    } else {
-      data.delete(key)
-    }
+    set(key, undefined as any)
     if (_option.onChange) {
       _option.onChange(key as string, undefined, 'delete')
     }
@@ -85,9 +74,18 @@ export const createBucket = <IT extends { [key: string]: any }>(initial: IT, opt
     dispatch()
   }
 
+  const has = <T extends keyof IT>(key: T) => {
+    const value = get(key)
+    return value !== undefined && value !== null
+  }
+
+  const isInitialed = () => {
+    return has(Object.keys(initial).shift() as keyof IT)
+  }
+
   const clear = () => {
     for (let key in initial) {
-      _delete(key as keyof IT)
+      del(key as keyof IT)
       changes.set(key, true)
     }
     dispatch()
@@ -115,8 +113,10 @@ export const createBucket = <IT extends { [key: string]: any }>(initial: IT, opt
   const getChanges = () => Array.from(changes.keys()).filter((key: string) => clearChange(key))
   const clearChanges = () => Array.from(changes.keys()).forEach((key: string) => changes.set(key, false))
 
-  for (let key in initial) {
-    set(key as keyof IT, initial[key])
+  if (!isInitialed()) {
+    for (let key in initial) {
+      set(key as keyof IT, initial[key])
+    }
   }
 
   const useHook = () => {
@@ -135,7 +135,7 @@ export const createBucket = <IT extends { [key: string]: any }>(initial: IT, opt
     return {
       set,
       get,
-      delete: _delete,
+      delete: del,
       clear,
       getState: () => state,
       setState,
@@ -148,7 +148,7 @@ export const createBucket = <IT extends { [key: string]: any }>(initial: IT, opt
 
   useHook.set = set
   useHook.get = get
-  useHook.delete = _delete
+  useHook.delete = del
   useHook.clear = clear
   useHook.getState = getState
   useHook.setState = setState
