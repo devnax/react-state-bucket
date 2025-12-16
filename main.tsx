@@ -1,27 +1,34 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { createBucket } from './src';
+import { createBucket, xv } from './src';
 
 const useForm = createBucket({
-  name: ""
-}, { store: "local" })
+  email: xv.string().email().optional(),
+  password: xv.string().default("nax"),
+  loading: xv.boolean().default(false),
+})
 
 const Change = () => {
-
+  const form = useForm()
   return (
     <button
       onClick={() => {
-        useForm.set("name", useForm.get("name") === "nax" ? "Devnax" : "nax")
+        form.set("email", "devnax")
+
+
       }}
     >Add</button>
   )
 }
 
 const Delete = () => {
+  const form = useForm()
   return (
     <button
       onClick={() => {
-        useForm.delete("name")
+        const err = form.errors
+        console.log(err);
+
       }}
     >Delete</button>
   )
@@ -29,12 +36,12 @@ const Delete = () => {
 
 const App = () => {
   const form = useForm()
-  const name = form.get("name")
-  console.log(form.getChanges());
+  const email = form.get("email")
+
 
   return (
     <div>
-      name: {name}
+      email: {email}
       <Change />
       <Delete />
     </div>
