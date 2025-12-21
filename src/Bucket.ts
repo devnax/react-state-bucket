@@ -1,4 +1,5 @@
 import { Infer, XVInstanceType } from "xanv"
+import { getCookie, setCookie } from "./Cookie"
 export type StoreType = "memory" | "session" | "local" | "url" | "cookie"
 
 export type InitialBucketData = {
@@ -9,6 +10,10 @@ export type BucketOptions = {
    store?: StoreType;
    onChange?: (key: string, value: any) => void
 }
+
+
+
+
 
 class Bucket<IT extends InitialBucketData> {
    private initial: IT
@@ -42,7 +47,7 @@ class Bucket<IT extends InitialBucketData> {
             url.searchParams.set(key as string, encodeURIComponent(value))
             window.history.replaceState({}, '', url.toString())
          } else if (this.option.store === 'cookie') {
-            document.cookie = `${key as string}=${encodeURIComponent(value)}; path=/`
+            setCookie(key as string, value)
          } else {
             this.data.set(key as any, value)
          }
@@ -59,8 +64,9 @@ class Bucket<IT extends InitialBucketData> {
    }
 
    get<T extends keyof IT>(key: T) {
+      let value;
+
       if (typeof window !== 'undefined') {
-         let value;
          if (this.option.store === 'session' || this.option.store === 'local') {
             let storage = this.option.store === "session" ? sessionStorage : localStorage
             value = storage.getItem(key as string)!
@@ -69,10 +75,7 @@ class Bucket<IT extends InitialBucketData> {
             let storedValue = url.searchParams.get(key as string)!
             value = decodeURIComponent(storedValue)
          } else if (this.option.store === 'cookie') {
-            let match = document.cookie.match(new RegExp('(^| )' + (key as string) + '=([^;]+)'))
-            if (match) {
-               value = decodeURIComponent(match[2])
-            }
+            value = getCookie(key as string)
          } else {
             value = this.data.get(key as any)
          }
@@ -80,14 +83,13 @@ class Bucket<IT extends InitialBucketData> {
          try {
             value = JSON.parse(value as any)
          } catch (error) { }
-
-         try {
-            value = this.initial[key].parse(value)
-         } catch (error) {
-         }
-         return value
-
       }
+
+      try {
+         value = this.initial[key].parse(value)
+      } catch (error) {
+      }
+      return value
    }
 
    sets(state: { [key in keyof IT]?: Infer<IT[key]> }) {
