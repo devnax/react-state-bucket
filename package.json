@@ -1,5 +1,5 @@
 {
-  "version": "1.2.6",
+  "version": "1.2.7",
   "name": "react-state-bucket",
   "author": "Naxrul Ahmed",
   "license": "MIT",
@@ -44,6 +44,7 @@
     }
   },
   "dependencies": {
-    "xanv": "^1.1.11"
+    "xanv": "^1.1.11",
+    "youid": "^1.0.13"
   }
 }

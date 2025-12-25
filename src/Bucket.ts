@@ -1,5 +1,6 @@
 import { Infer, XVInstanceType } from "xanv"
 import { getCookie, setCookie } from "./Cookie"
+import youid from "youid"
 export type StoreType = "memory" | "session" | "local" | "url" | "cookie"
 
 export type InitialBucketData = {
@@ -8,23 +9,77 @@ export type InitialBucketData = {
 
 export type BucketOptions = {
    store?: StoreType;
+   data_key?: string;
    onChange?: (key: string, value: any) => void
 }
-
-
-
 
 
 class Bucket<IT extends InitialBucketData> {
    private initial: IT
    private option: BucketOptions
    private hooks: Map<string, Function> = new Map()
-   private data: Map<keyof IT, IT[keyof IT]> = new Map()
+   private data: Record<any, any> = {}
    readonly changes: Map<keyof IT, boolean> = new Map()
+   private data_key: string
 
    constructor(initial: IT, option?: BucketOptions) {
       this.initial = initial
       this.option = { store: "memory", ...option }
+      this.data_key = option?.data_key || ''
+      if (!this.data_key) {
+         let data_key = ''
+         for (let key in initial) {
+            const field = initial[key]
+            data_key += key + ':' + JSON.stringify(field.meta) + ';'
+         }
+         this.data_key = youid(data_key)
+      }
+
+
+      if (typeof window !== 'undefined') {
+         if (this.option.store === 'session' || this.option.store === 'local') {
+            let storage = this.option.store === "session" ? sessionStorage : localStorage
+            const value = storage.getItem(this.data_key)
+            let data: any = {}
+            if (value) {
+               data = JSON.parse(value)
+            }
+            for (let key in initial) {
+               try {
+                  this.data[key] = initial[key].parse(data[key])
+               } catch (error) {
+                  this.data[key] = data[key]
+               }
+            }
+         } else if (this.option.store === 'url') {
+            let url = new URL(window.location.href)
+            const value = url.searchParams.get(this.data_key)
+            let data: any = {}
+            if (value) {
+               data = JSON.parse(decodeURIComponent(value))
+            }
+            for (let key in initial) {
+               try {
+                  this.data[key] = initial[key].parse(data[key])
+               } catch (error) {
+                  this.data[key] = data[key]
+               }
+            }
+         } else if (this.option.store === 'cookie') {
+            const cookieData = getCookie(this.data_key)
+            let data: any = {}
+            if (cookieData) {
+               data = JSON.parse(cookieData)
+            }
+            for (let key in initial) {
+               try {
+                  this.data[key] = initial[key].parse(data[key])
+               } catch (error) {
+                  this.data[key] = data[key]
+               }
+            }
+         }
+      }
    }
 
    subscribe(id: string, hook: Function) {
@@ -37,59 +92,39 @@ class Bucket<IT extends InitialBucketData> {
    }
 
    set<T extends keyof IT>(key: T, value: Infer<IT[T]>, dispatch = true) {
+      if (!(key in this.initial)) {
+         throw new Error(`Key ${String(key)} not in Bucket initial data`)
+      }
+      this.data[key] = value
+      this.changes.set(key as string, true)
+      if (this.option.onChange) {
+         this.option.onChange(key as string, value)
+      }
+
       if (typeof window !== 'undefined') {
          value = JSON.stringify(value) as any
          if (this.option.store === 'session' || this.option.store === 'local') {
             let storage = this.option.store === "session" ? sessionStorage : localStorage
-            storage.setItem(key as string, value)
+            storage.setItem(this.data_key, JSON.stringify(this.data))
          } else if (this.option.store === 'url') {
             let url = new URL(window.location.href)
-            url.searchParams.set(key as string, encodeURIComponent(value))
+            url.searchParams.set(this.data_key, encodeURIComponent(JSON.stringify(this.data)))
             window.history.replaceState({}, '', url.toString())
          } else if (this.option.store === 'cookie') {
-            setCookie(key as string, value)
-         } else {
-            this.data.set(key as any, value)
+            setCookie(this.data_key, JSON.stringify(this.data))
          }
+      }
 
-         this.changes.set(key as string, true)
-         if (this.option.onChange) {
-            this.option.onChange(key as string, value)
-         }
-
-         if (dispatch) {
-            this.hooks.forEach(h => h())
-         }
+      if (dispatch) {
+         this.hooks.forEach(h => h())
       }
    }
 
    get<T extends keyof IT>(key: T) {
-      let value;
-
-      if (typeof window !== 'undefined') {
-         if (this.option.store === 'session' || this.option.store === 'local') {
-            let storage = this.option.store === "session" ? sessionStorage : localStorage
-            value = storage.getItem(key as string)!
-         } else if (this.option.store === 'url') {
-            let url = new URL(window.location.href)
-            let storedValue = url.searchParams.get(key as string)!
-            value = decodeURIComponent(storedValue)
-         } else if (this.option.store === 'cookie') {
-            value = getCookie(key as string)
-         } else {
-            value = this.data.get(key as any)
-         }
-
-         try {
-            value = JSON.parse(value as any)
-         } catch (error) { }
+      if (!(key in this.initial)) {
+         throw new Error(`Key ${String(key)} not in Bucket initial data`)
       }
-
-      try {
-         value = this.initial[key].parse(value)
-      } catch (error) {
-      }
-      return value
+      return this.data[key]
    }
 
    sets(state: { [key in keyof IT]?: Infer<IT[key]> }) {
@@ -97,6 +132,17 @@ class Bucket<IT extends InitialBucketData> {
          this.set(k as keyof IT, state[k as keyof IT]!, true)
       }
       this.hooks.forEach(h => h())
+   }
+
+   validate() {
+      try {
+         for (let k in this.initial) {
+            this.initial[k].parse(this.get(k as keyof IT))
+         }
+      } catch (error) {
+         return false
+      }
+      return true
    }
 
    get state() {
@@ -111,8 +157,6 @@ class Bucket<IT extends InitialBucketData> {
       const errors = new Map<keyof IT, string>()
       for (let k in this.initial) {
          try {
-            // console.log(k, this.get(k as keyof IT));
-
             this.initial[k].parse(this.get(k as keyof IT))
          } catch (error: any) {
             errors.set(k, error.message)
