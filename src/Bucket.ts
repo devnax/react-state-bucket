@@ -78,6 +78,20 @@ class Bucket<IT extends InitialBucketData> {
                   this.data[key] = data[key]
                }
             }
+         } else {
+            for (let key in initial) {
+               try {
+                  this.data[key] = initial[key].parse(undefined)
+               } catch (error) {
+               }
+            }
+         }
+      } else {
+         for (let key in initial) {
+            try {
+               this.data[key] = initial[key].parse(undefined)
+            } catch (error) {
+            }
          }
       }
    }
