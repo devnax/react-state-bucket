@@ -117,13 +117,19 @@ export const createBucket = <T extends InitialBucketData>(initial: T, option?: B
       } catch (error: any) {
         errors[key] = (error as any).message
       }
+      hooks.forEach((hook) => hook());
       return !(key in errors)
     }
 
     const validate = () => {
       for (let k in initial) {
-        isValid(k)
+        try {
+          initial[k].parse(state[k])
+        } catch (error: any) {
+          errors[k] = (error as any).message
+        }
       }
+      hooks.forEach((hook) => hook());
       return Object.keys(errors).length === 0
     }
 
