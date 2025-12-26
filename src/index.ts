@@ -32,7 +32,7 @@ export const createBucket = <T extends InitialBucketData>(initial: T, option?: B
   }
 
   const hooks = new Map<string, Function>()
-  const state: Record<keyof T, Infer<T[keyof T]>> = Initial(initial, option?.data_key || '', option || {}) as Record<keyof T, Infer<T[keyof T]>>;
+  const state: Record<keyof T, any> = Initial(initial, option?.data_key || '', option || {}) as Record<keyof T, any>;
   const changes: Record<keyof T, boolean> = {} as any
 
   const useBucket = () => {
