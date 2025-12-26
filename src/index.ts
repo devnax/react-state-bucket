@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from "react"
-import { xv as XV, XVInstanceType } from "xanv"
+import { Infer, xv as XV, XVInstanceType } from "xanv"
 import youid from "youid";
 import { getCookie, setCookie } from "./Cookie";
 import Initial from "./Initial";
@@ -31,9 +31,8 @@ export const createBucket = <T extends InitialBucketData>(initial: T, option?: B
     option.data_key = youid(data_key)
   }
 
-
   const hooks = new Map<string, Function>()
-  const state: Record<keyof T, T[keyof T]> = Initial(initial, option?.data_key || '', option || {}) as Record<keyof T, T[keyof T]>;
+  const state: Record<keyof T, Infer<T[keyof T]>> = Initial(initial, option?.data_key || '', option || {}) as Record<keyof T, Infer<T[keyof T]>>;
   const changes: Record<keyof T, boolean> = {} as any
 
   const useBucket = () => {
@@ -47,91 +46,99 @@ export const createBucket = <T extends InitialBucketData>(initial: T, option?: B
       }
     }, [])
 
-    return new Proxy(state, {
-      get: (target: any, prop: string) => target[prop],
-      set: (target, prop: string, value) => {
-        if (!(prop in initial)) {
-          throw new Error(`Property ${String(prop)} is not defined in the bucket.`)
-        }
-        (target as any)[prop as keyof T] = value;
-        hooks.forEach((hook) => hook());
-        changes[prop as keyof T] = true
-
-        if (option?.onChange && changes[prop as keyof T]) {
-          option.onChange(prop as string, value)
-        }
-
-        if (typeof window !== 'undefined') {
-          value = JSON.stringify(value) as any
-          if (option.store === 'session' || option.store === 'local') {
-            let storage = option.store === "session" ? sessionStorage : localStorage
-            storage.setItem(option.data_key!, JSON.stringify(state))
-          } else if (option.store === 'url') {
-            let url = new URL(window.location.href)
-            url.searchParams.set(option.data_key!, encodeURIComponent(JSON.stringify(state)))
-            window.history.replaceState({}, '', url.toString())
-          } else if (option.store === 'cookie') {
-            setCookie(option.data_key!, JSON.stringify(state))
-          }
-        }
-        return true;
+    const get = (key: keyof T, defaultValue?: any) => {
+      if (!(key in initial)) {
+        throw new Error(`Property ${String(key)} is not defined in the bucket.`)
       }
-    }) as Record<keyof T, any>
-  }
-
-  useBucket.validate = () => {
-    try {
-      for (let k in initial) {
-        initial[k].parse(state[k])
+      let value = state[key];
+      if (value === undefined && defaultValue !== undefined) {
+        value = defaultValue
       }
-    } catch (error) {
-      return false
+      return value;
     }
-    return true
-  }
 
-  useBucket.isValid = (key: keyof T) => {
-    try {
-      initial[key].parse(state[key])
-    } catch (error) {
-      return false
-    }
-    return true
-  }
+    const set = (key: keyof T, value: any) => {
+      if (!(key in initial)) {
+        throw new Error(`Property ${String(key)} is not defined in the bucket.`)
+      }
+      state[key] = value;
+      hooks.forEach((hook) => hook());
+      changes[key] = true
 
-  useBucket.getChanges = () => {
-    const changedData: Partial<Record<keyof T, any>> = {}
-    for (let k in changes) {
-      if (changes[k as keyof T]) {
-        changedData[k as keyof T] = state[k as keyof T]
+      if (option?.onChange && changes[key]) {
+        option.onChange(key as string, value)
+      }
+
+      if (typeof window !== 'undefined') {
+        value = JSON.stringify(value) as any
+        if (option.store === 'session' || option.store === 'local') {
+          let storage = option.store === "session" ? sessionStorage : localStorage
+          storage.setItem(option.data_key!, JSON.stringify(state))
+        } else if (option.store === 'url') {
+          let url = new URL(window.location.href)
+          url.searchParams.set(option.data_key!, encodeURIComponent(JSON.stringify(state)))
+          window.history.replaceState({}, '', url.toString())
+        } else if (option.store === 'cookie') {
+          setCookie(option.data_key!, JSON.stringify(state))
+        }
       }
     }
-    return changedData
-  }
 
-  useBucket.isChanged = (k: keyof T) => !!changes[k]
-
-  useBucket.errors = () => {
-    const errors: Record<string, string> = {}
-    for (let k in initial) {
+    const validate = () => {
       try {
-        initial[k].parse(state[k])
-      } catch (error: any) {
-        errors[k] = error.message
+        for (let k in initial) {
+          initial[k].parse(state[k])
+        }
+      } catch (error) {
+        return false
       }
+      return true
     }
-    return errors
-  }
 
-  useBucket.getError = (key: keyof T) => {
-    try {
-      initial[key].parse(state[key])
-    } catch (error: any) {
-      return error.message
+    const isValid = (key: keyof T) => {
+      try {
+        initial[key].parse(state[key])
+      } catch (error) {
+        return false
+      }
+      return true
     }
-    return null
-  }
 
+    const getChanges = () => {
+      const changedData: Partial<Record<keyof T, any>> = {}
+      for (let k in changes) {
+        if (changes[k as keyof T]) {
+          changedData[k as keyof T] = state[k as keyof T]
+        }
+      }
+      return changedData
+    }
+
+    const isChanged = (k: keyof T) => !!changes[k]
+
+    const errors = () => {
+      const errors: Record<string, string> = {}
+      for (let k in initial) {
+        try {
+          initial[k].parse(state[k])
+        } catch (error: any) {
+          errors[k] = error.message
+        }
+      }
+      return errors
+    }
+
+    const getError = (key: keyof T) => {
+      try {
+        initial[key].parse(state[key])
+      } catch (error: any) {
+        return error.message
+      }
+      return null
+    }
+
+    return { state, get, set, validate, isValid, getChanges, isChanged, errors, getError }
+  }
 
   return useBucket
 }

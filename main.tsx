@@ -10,13 +10,11 @@ const useForm = createBucket({
 
 const Change = () => {
   const form = useForm()
-  console.log(useForm.isChanged("email"));
-
 
   return (
     <button
       onClick={() => {
-        form.email = "hello world"
+        form.set("email", "Hello")
       }}
     >Add</button>
   )
@@ -28,7 +26,7 @@ const Delete = () => {
   return (
     <button
       onClick={() => {
-        form.email = "Nice to meet you"
+        form.set("email", "Nice to meet you")
       }}
     >Delete</button>
   )
@@ -36,7 +34,7 @@ const Delete = () => {
 
 const App = () => {
   const form = useForm()
-  const email = form.email
+  const email = form.state.email
 
   return (
     <div>
