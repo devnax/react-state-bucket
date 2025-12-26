@@ -34,6 +34,7 @@ export const createBucket = <T extends InitialBucketData>(initial: T, option?: B
   const hooks = new Map<string, Function>()
   const state: Record<keyof T, any> = Initial(initial, option?.data_key || '', option || {}) as Record<keyof T, any>;
   const changes: Record<keyof T, boolean> = {} as any
+  const errors: Record<keyof T, string> = {} as any
 
   const useBucket = () => {
     const id = "rsb_" + useId()
@@ -57,14 +58,15 @@ export const createBucket = <T extends InitialBucketData>(initial: T, option?: B
       return value;
     }
 
-    const set = (key: keyof T, value: any) => {
+    const set = (key: keyof T, value: any, dispatch = true) => {
       if (!(key in initial)) {
         throw new Error(`Property ${String(key)} is not defined in the bucket.`)
       }
       state[key] = value;
-      hooks.forEach((hook) => hook());
+      if (dispatch) {
+        hooks.forEach((hook) => hook());
+      }
       changes[key] = true
-
       if (option?.onChange && changes[key]) {
         option.onChange(key as string, value)
       }
@@ -84,31 +86,24 @@ export const createBucket = <T extends InitialBucketData>(initial: T, option?: B
       }
     }
 
-    const validate = () => {
-      try {
-        for (let k in initial) {
-          initial[k].parse(state[k])
-        }
-      } catch (error) {
-        return false
-      }
-      return true
+    const _delete = (key: keyof T) => {
+      set(key, undefined)
     }
 
-    const isValid = (key: keyof T) => {
-      try {
-        initial[key].parse(state[key])
-      } catch (error) {
-        return false
+    const clear = () => {
+      const initVal = Initial(initial, option?.data_key || '', option || {}) as Record<keyof T, any>;
+      for (let key in initial) {
+        state[key] = initVal[key];
+        delete changes[key]
       }
-      return true
+      hooks.forEach((hook) => hook());
     }
 
     const getChanges = () => {
       const changedData: Partial<Record<keyof T, any>> = {}
       for (let k in changes) {
-        if (changes[k as keyof T]) {
-          changedData[k as keyof T] = state[k as keyof T]
+        if (changes[k]) {
+          changedData[k] = state[k]
         }
       }
       return changedData
@@ -116,28 +111,67 @@ export const createBucket = <T extends InitialBucketData>(initial: T, option?: B
 
     const isChanged = (k: keyof T) => !!changes[k]
 
-    const errors = () => {
-      const errors: Record<string, string> = {}
-      for (let k in initial) {
-        try {
-          initial[k].parse(state[k])
-        } catch (error: any) {
-          errors[k] = error.message
-        }
-      }
-      return errors
-    }
-
-    const getError = (key: keyof T) => {
+    const isValid = (key: keyof T) => {
       try {
         initial[key].parse(state[key])
       } catch (error: any) {
-        return error.message
+        errors[key] = (error as any).message
       }
-      return null
+      return !(key in errors)
     }
 
-    return { state, get, set, validate, isValid, getChanges, isChanged, errors, getError }
+    const validate = () => {
+      for (let k in initial) {
+        isValid(k)
+      }
+      return Object.keys(errors).length === 0
+    }
+
+    const getError = (key: keyof T) => {
+      if (key in errors) {
+        return errors[key]
+      }
+      return ''
+    }
+
+    const getErrors = () => {
+      return errors
+    }
+
+    const setError = (key: keyof T, message: string) => {
+      errors[key] = message
+      hooks.forEach((hook) => hook());
+    }
+
+    const clearErrors = () => {
+      for (let k in errors) {
+        delete errors[k]
+      }
+      hooks.forEach((hook) => hook());
+    }
+
+    const clearError = (key: keyof T) => {
+      delete errors[key]
+      hooks.forEach((hook) => hook());
+    }
+
+
+    return {
+      state,
+      get,
+      set,
+      delete: _delete,
+      clear,
+      validate,
+      isValid,
+      getChanges,
+      isChanged,
+      getErrors,
+      getError,
+      setError,
+      clearErrors,
+      clearError
+    }
   }
 
   return useBucket
