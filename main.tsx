@@ -6,14 +6,17 @@ const useForm = createBucket({
   email: xv.string().email().default("devnax@gmail.com").optional(),
   password: xv.string().default("nax"),
   loading: xv.boolean().default(false),
-});
+}, { store: "local" });
 
 const Change = () => {
   const form = useForm()
+  console.log(useForm.isChanged("email"));
+
+
   return (
     <button
       onClick={() => {
-        form.set("email", "devnax")
+        form.email = "hello world"
       }}
     >Add</button>
   )
@@ -21,10 +24,11 @@ const Change = () => {
 
 const Delete = () => {
   const form = useForm()
+
   return (
     <button
       onClick={() => {
-        form.set("email", "")
+        form.email = "Nice to meet you"
       }}
     >Delete</button>
   )
@@ -32,8 +36,7 @@ const Delete = () => {
 
 const App = () => {
   const form = useForm()
-  const email = form.get("email")
-
+  const email = form.email
 
   return (
     <div>
