@@ -86,7 +86,7 @@ export const createBucket = <T extends InitialBucketData>(initial: T, option?: B
       }
     }
 
-    const sets = (data: Infer<T>, dispatch = true) => {
+    const sets = (data: Partial<Infer<T>>, dispatch = true) => {
       for (let k in data) {
         let v = data[k]
         set(k, v, false)
