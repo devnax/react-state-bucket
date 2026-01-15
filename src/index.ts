@@ -86,6 +86,17 @@ export const createBucket = <T extends InitialBucketData>(initial: T, option?: B
       }
     }
 
+    const sets = (data: Infer<T>, dispatch = true) => {
+      for (let k in data) {
+        let v = data[k]
+        set(k, v, false)
+      }
+
+      if (dispatch) {
+        hooks.forEach((hook) => hook());
+      }
+    }
+
     const _delete = (key: keyof T) => {
       set(key, undefined)
     }
@@ -166,6 +177,7 @@ export const createBucket = <T extends InitialBucketData>(initial: T, option?: B
       state,
       get,
       set,
+      sets,
       delete: _delete,
       clear,
       validate,
