@@ -2,39 +2,36 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBucket, xv } from './src';
 
-const useForm = createBucket({
+const store = createBucket({
   email: xv.string().email().default("devnax@gmail.com").optional(),
   password: xv.string().default("nax"),
   loading: xv.boolean().default(false),
 }, { store: "local" });
 
 const Change = () => {
-  const form = useForm()
 
   return (
     <button
       onClick={() => {
-        form.set("email", "Hello")
+        store.set("email", "Hello")
       }}
     >Add</button>
   )
 }
 
 const Delete = () => {
-  const form = useForm()
 
   return (
     <button
       onClick={() => {
-        form.set("email", "Nice to meet you")
+        store.set("email", "Nice to meet you")
       }}
     >Delete</button>
   )
 }
 
 const App = () => {
-  const form = useForm()
-  const email = form.state.email
+  const email = store.get("email")
 
   return (
     <div>
